@@ -36,6 +36,9 @@ import {
   ERC4626WrapV2Adapter,
 } from "../contracts";
 import { Address, Bytes } from "./../types";
+import {
+  UniswapV3ExchangeAdapterV3,
+} from "../../typechain";
 
 import { AaveGovernanceV2Adapter__factory } from "../../typechain/factories/AaveGovernanceV2Adapter__factory";
 import { AaveV2WrapV2Adapter__factory } from "../../typechain/factories/AaveV2WrapV2Adapter__factory";
@@ -64,6 +67,7 @@ import { UniswapV2IndexExchangeAdapter__factory } from "../../typechain/factorie
 import { UniswapV3IndexExchangeAdapter__factory } from "../../typechain/factories/UniswapV3IndexExchangeAdapter__factory";
 import { UniswapV3ExchangeAdapter__factory } from "../../typechain/factories/UniswapV3ExchangeAdapter__factory";
 import { UniswapV3ExchangeAdapterV2__factory } from "../../typechain/factories/UniswapV3ExchangeAdapterV2__factory";
+import { UniswapV3ExchangeAdapterV3__factory } from "../../typechain/factories/UniswapV3ExchangeAdapterV3__factory";
 import { SnapshotGovernanceAdapter__factory } from "../../typechain/factories/SnapshotGovernanceAdapter__factory";
 import { SynthetixExchangeAdapter__factory } from "../../typechain/factories/SynthetixExchangeAdapter__factory";
 import { CompoundBravoGovernanceAdapter__factory } from "../../typechain/factories/CompoundBravoGovernanceAdapter__factory";
@@ -252,6 +256,12 @@ export default class DeployAdapters {
     swapRouter: Address,
   ): Promise<UniswapV3ExchangeAdapterV2> {
     return await new UniswapV3ExchangeAdapterV2__factory(this._deployerSigner).deploy(swapRouter);
+  }
+
+  public async deployUniswapV3ExchangeAdapterV3(
+    swapRouter: Address,
+  ): Promise<UniswapV3ExchangeAdapterV3> {
+    return await new UniswapV3ExchangeAdapterV3__factory(this._deployerSigner).deploy(swapRouter);
   }
 
   public async deployKyberV3IndexExchangeAdapter(
