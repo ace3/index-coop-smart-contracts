@@ -34,3 +34,4 @@ yarn-error.log*
 # IDE Configs
 .vscode/*
 .idea
+/contracts/protocol/artifacts
