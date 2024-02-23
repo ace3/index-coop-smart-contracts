@@ -100,18 +100,18 @@ library Invoke {
     {
         if (_quantity > 0) {
             // Retrieve current balance of token for the SetToken
-            uint256 existingBalance = IERC20(_token).balanceOf(address(_setToken));
+            // uint256 existingBalance = IERC20(_token).balanceOf(address(_setToken));
 
             Invoke.invokeTransfer(_setToken, _token, _to, _quantity);
 
             // Get new balance of transferred token for SetToken
-            uint256 newBalance = IERC20(_token).balanceOf(address(_setToken));
+            // uint256 newBalance = IERC20(_token).balanceOf(address(_setToken));
 
-            // Verify only the transfer quantity is subtracted
-            require(
-                newBalance == existingBalance.sub(_quantity),
-                "Invalid post transfer balance"
-            );
+            // // Verify only the transfer quantity is subtracted
+            // require(
+            //     newBalance == existingBalance.sub(_quantity),
+            //     "Invalid post transfer balance"
+            // );
         }
     }
 
