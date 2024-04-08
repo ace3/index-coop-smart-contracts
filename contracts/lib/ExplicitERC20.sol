@@ -50,7 +50,7 @@ library ExplicitERC20 {
     {
         // Call specified ERC20 contract to transfer tokens (via proxy).
         if (_quantity > 0) {
-            // uint256 existingBalance = _token.balanceOf(_to);
+            uint256 existingBalance = _token.balanceOf(_to);
 
             SafeERC20.safeTransferFrom(
                 _token,
@@ -59,13 +59,13 @@ library ExplicitERC20 {
                 _quantity
             );
 
-            // uint256 newBalance = _token.balanceOf(_to);
+            uint256 newBalance = _token.balanceOf(_to);
 
-            // // Verify transfer quantity is reflected in balance
-            // require(
-            //     newBalance == existingBalance.add(_quantity),
-            //     "Invalid post transfer balance"
-            // );
+            // Verify transfer quantity is reflected in balance
+            require(
+                newBalance == existingBalance.add(_quantity),
+                "Invalid post transfer balance"
+            );
         }
     }
 }

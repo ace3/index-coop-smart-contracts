@@ -193,14 +193,18 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         isPublicAccess[address(_setToken)] = !isPublicAccess[address(_setToken)];
     }
 
-    // Function to add an address to the whitelist for a given SetToken
-    function addToWhitelist(ISetToken _setToken, address _address) public onlyManagerAndValidSet(_setToken) {
-        whitelistedAddresses[address(_setToken)][_address] = true;
+    // Function to add multiple addresses to the whitelist for a given SetToken
+    function addToWhitelist(ISetToken _setToken, address[] memory _addresses) public onlyManagerAndValidSet(_setToken) {
+        for (uint i = 0; i < _addresses.length; i++) {
+            whitelistedAddresses[address(_setToken)][_addresses[i]] = true;
+        }
     }
 
-    // Function to remove an address from the whitelist for a given SetToken
-    function removeFromWhitelist(ISetToken _setToken, address _address) public onlyManagerAndValidSet(_setToken) {
-        whitelistedAddresses[address(_setToken)][_address] = false;
+    // Function to remove multiple addresses from the whitelist for a given SetToken
+    function removeFromWhitelist(ISetToken _setToken, address[] memory _addresses) public onlyManagerAndValidSet(_setToken) {
+        for (uint i = 0; i < _addresses.length; i++) {
+            whitelistedAddresses[address(_setToken)][_addresses[i]] = false;
+        }
     }
 
     // Function to check if an address is in the whitelist for a given SetToken
@@ -241,10 +245,7 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         nonReentrant
         onlyValidAndInitializedSet(_setToken)
     {
-        require(
-          isPublicAccess[address(_setToken)] || whitelistedAddresses[address(_setToken)][msg.sender],
-          "Set have limited access"
-        );
+        require(_guard(_setToken),"Set have limited access");
     
         _validateCommon(_setToken, _reserveAsset, _reserveAssetQuantity);
 

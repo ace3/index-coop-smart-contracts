@@ -1514,13 +1514,13 @@ library ExplicitERC20 {
                 _quantity
             );
 
-            // uint256 newBalance = _token.balanceOf(_to);
+            uint256 newBalance = _token.balanceOf(_to);
 
-            // // Verify transfer quantity is reflected in balance
-            // require(
-            //     newBalance == existingBalance.add(_quantity),
-            //     "Invalid post transfer balance"
-            // );
+            // Verify transfer quantity is reflected in balance
+            require(
+                newBalance == existingBalance.add(_quantity),
+                "Invalid post transfer balance"
+            );
         }
     }
 }
@@ -2828,24 +2828,6 @@ contract ERC20 is Context, IERC20 {
 
 pragma solidity 0.6.10;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @title CustomOracleNavIssuanceModule
  * @author Set Protocol
@@ -2981,6 +2963,10 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
     // 3 index stores the direct protocol fee % on the controller, charged in the redeem function
     uint256 constant internal PROTOCOL_REDEEM_DIRECT_FEE_INDEX = 3;
 
+
+    mapping(address => bool) private isPublicAccess; // Mapping for access flags for each SetToken
+    mapping(address => mapping(address => bool)) private whitelistedAddresses;
+
     /* ============ Constructor ============ */
 
     /**
@@ -2990,6 +2976,41 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
     constructor(IController _controller, IWETH _weth) public ModuleBase(_controller) {
         weth = _weth;
     }
+
+    // Function to toggle public access on/off
+    function togglePublicAccess(ISetToken _setToken) external nonReentrant
+        onlyManagerAndValidSet(_setToken) {
+        isPublicAccess[address(_setToken)] = !isPublicAccess[address(_setToken)];
+    }
+
+    // Function to add multiple addresses to the whitelist for a given SetToken
+    function addToWhitelist(ISetToken _setToken, address[] memory _addresses) public onlyManagerAndValidSet(_setToken) {
+        for (uint i = 0; i < _addresses.length; i++) {
+            whitelistedAddresses[address(_setToken)][_addresses[i]] = true;
+        }
+    }
+
+    // Function to remove multiple addresses from the whitelist for a given SetToken
+    function removeFromWhitelist(ISetToken _setToken, address[] memory _addresses) public onlyManagerAndValidSet(_setToken) {
+        for (uint i = 0; i < _addresses.length; i++) {
+            whitelistedAddresses[address(_setToken)][_addresses[i]] = false;
+        }
+    }
+
+    // Function to check if an address is in the whitelist for a given SetToken
+    function isWhitelisted(ISetToken _setToken, address _address) public view returns (bool) {
+        return whitelistedAddresses[address(_setToken)][_address];
+    }
+
+    // Function to check if an address is in the whitelist for a given SetToken
+    function isPublic(ISetToken _setToken) public view returns (bool) {
+        return isPublicAccess[address(_setToken)];
+    }
+
+    function _guard(ISetToken _setToken) internal view returns (bool) {
+      return isPublicAccess[address(_setToken)] || whitelistedAddresses[address(_setToken)][msg.sender];
+    }
+
 
     /* ============ External Functions ============ */
 
@@ -3014,6 +3035,8 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         nonReentrant
         onlyValidAndInitializedSet(_setToken)
     {
+        require(_guard(_setToken),"Set have limited access");
+    
         _validateCommon(_setToken, _reserveAsset, _reserveAssetQuantity);
 
         _callPreIssueHooks(_setToken, _reserveAsset, _reserveAssetQuantity, msg.sender, _to);
@@ -3026,6 +3049,8 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
 
         _handleIssueStateUpdates(_setToken, _reserveAsset, _to, issueInfo);
     }
+
+
 
     /**
      * Wraps ETH and deposits WETH if allowed into the SetToken and mints the appropriate % of Net Asset Value of the SetToken
@@ -3045,6 +3070,7 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         nonReentrant
         onlyValidAndInitializedSet(_setToken)
     {
+        require(_guard(_setToken),"Set have limited access");
         weth.deposit{ value: msg.value }();
 
         _validateCommon(_setToken, address(weth), msg.value);
@@ -3081,6 +3107,7 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         nonReentrant
         onlyValidAndInitializedSet(_setToken)
     {
+        require(_guard(_setToken),"Set have limited access");
         _validateCommon(_setToken, _reserveAsset, _setTokenQuantity);
 
         _callPreRedeemHooks(_setToken, _setTokenQuantity, msg.sender, _to);
@@ -3122,6 +3149,7 @@ contract CustomOracleNavIssuanceModule is ModuleBase, ReentrancyGuard {
         nonReentrant
         onlyValidAndInitializedSet(_setToken)
     {
+        require(_guard(_setToken),"Set have limited access");
         _validateCommon(_setToken, address(weth), _setTokenQuantity);
 
         _callPreRedeemHooks(_setToken, _setTokenQuantity, msg.sender, _to);
