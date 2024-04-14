@@ -32,6 +32,8 @@ const mochaConfig = {
 
 checkForkedProviderEnvironment();
 
+const FORK_PRIVATE_KEY = privateKeys[0];
+
 const hardhatNetworks = {
   kovan: {
     url: "https://kovan.infura.io/v3/" + process.env.INFURA_TOKEN,
@@ -76,6 +78,13 @@ const config: HardhatUserConfig = {
       timeout: 200000,
       gas: 12000000,
       blockGasLimit: 12000000,
+    },
+    fork: {
+      url: "http://127.0.0.1:8545",
+      timeout: 200000,
+      gas: 12000000,
+      blockGasLimit: 12000000,
+      accounts: [FORK_PRIVATE_KEY],
     },
     // To update coverage network configuration got o .solcover.js and update param in providerOptions field
     coverage: {
