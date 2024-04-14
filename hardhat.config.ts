@@ -1,37 +1,54 @@
 require("dotenv").config();
+require("hardhat-contract-sizer");
 
-import { HardhatUserConfig } from "hardhat/config";
+import chalk from "chalk";
+import { HardhatUserConfig, task } from "hardhat/config";
 import { privateKeys } from "./utils/wallets";
 
 import "@nomiclabs/hardhat-waffle";
-import "hardhat-typechain";
+import "@typechain/hardhat";
 import "solidity-coverage";
 import "hardhat-deploy";
-import "hardhat-contract-sizer";
+import {
+  TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE,
+  TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH,
+  TASK_COMPILE_SOLIDITY_COMPILE_JOB,
+} from "hardhat/builtin-tasks/task-names";
+
+import type { DependencyGraph, CompilationJob } from "hardhat/types/builtin-tasks";
+
 import "./tasks";
-import { forkingConfig } from "./utils/config";
 
-
-const INTEGRATIONTEST_TIMEOUT = 600000;
-
+export const forkingConfig = {
+  url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_TOKEN}`,
+  blockNumber: 16889000,
+};
 
 const mochaConfig = {
-  timeout: process.env.INTEGRATIONTEST ? INTEGRATIONTEST_TIMEOUT : 50000,
+  grep: "@forked-mainnet",
+  invert: process.env.FORK ? false : true,
+  timeout: 200000,
 } as Mocha.MochaOptions;
 
-const gasOption =
-  process.env.NETWORK === "polygon"
-    ? {
-        blockGasLimit: 20000000,
-      }
-    : process.env.NETWORK === "optimism"
-    ? {
-        blockGasLimit: 20000000,
-      }
-    : {
-        gas: 12000000,
-        blockGasLimit: 30000000,
-      };
+checkForkedProviderEnvironment();
+
+const hardhatNetworks = {
+  kovan: {
+    url: "https://kovan.infura.io/v3/" + process.env.INFURA_TOKEN,
+    // @ts-ignore
+    accounts: [`0x${process.env.KOVAN_DEPLOY_PRIVATE_KEY}`],
+  },
+  staging_mainnet: {
+    url: "https://mainnet.infura.io/v3/" + process.env.INFURA_TOKEN,
+    // @ts-ignore
+    accounts: [`0x${process.env.STAGING_MAINNET_DEPLOY_PRIVATE_KEY}`],
+  },
+  production: {
+    url: "https://mainnet.infura.io/v3/" + process.env.INFURA_TOKEN,
+    // @ts-ignore
+    accounts: [`0x${process.env.PRODUCTION_MAINNET_DEPLOY_PRIVATE_KEY}`],
+  },
+};
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -46,54 +63,138 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-  namedAccounts: {
-    deployer: 0,
-  },
   networks: {
     hardhat: {
+      allowUnlimitedContractSize: false,
       forking: process.env.FORK ? forkingConfig : undefined,
       accounts: getHardhatPrivateKeys(),
-      // @ts-ignore
-      timeout: INTEGRATIONTEST_TIMEOUT,
-      initialBaseFeePerGas: 0,
-      ...gasOption,
+      gas: 12000000,
+      blockGasLimit: 12000000,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
-      // @ts-ignore
-      timeout: INTEGRATIONTEST_TIMEOUT,
-      ...gasOption,
+      timeout: 200000,
+      gas: 12000000,
+      blockGasLimit: 12000000,
     },
-    kovan: {
-      url: "https://kovan.infura.io/v3/" + process.env.INFURA_TOKEN,
-      // @ts-ignore
-      accounts: process.env.KOVAN_DEPLOY_PRIVATE_KEY
-        ? [`0x${process.env.KOVAN_DEPLOY_PRIVATE_KEY}`]
-        : undefined,
+    // To update coverage network configuration got o .solcover.js and update param in providerOptions field
+    coverage: {
+      url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+      timeout: 200000,
     },
-    production: {
-      url: "https://mainnet.infura.io/v3/" + process.env.INFURA_TOKEN,
-      // @ts-ignore
-      accounts: process.env.PRODUCTION_MAINNET_DEPLOY_PRIVATE_KEY
-        ? [`0x${process.env.PRODUCTION_MAINNET_DEPLOY_PRIVATE_KEY}`]
-        : undefined,
-    },
+    ...(process.env.KOVAN_DEPLOY_PRIVATE_KEY && hardhatNetworks),
   },
-  mocha: mochaConfig,
+  // @ts-ignore
   typechain: {
     outDir: "typechain",
     target: "ethers-v5",
+    externalArtifacts: ["external/**/*.json"],
   },
+  // @ts-ignore
+  contractSizer: {
+    runOnCompile: false,
+  },
+
+  mocha: mochaConfig,
+
+  // These are external artifacts we don't compile but would like to improve
+  // test performance for by hardcoding the gas into the abi at runtime
+  // @ts-ignore
+  externalGasMods: ["external/abi/perp"],
 };
 
 function getHardhatPrivateKeys() {
   return privateKeys.map(key => {
-    const TEN_MILLION_ETH = "10000000000000000000000000";
+    const ONE_MILLION_ETH = "1000000000000000000000000";
     return {
       privateKey: key,
-      balance: TEN_MILLION_ETH,
+      balance: ONE_MILLION_ETH,
     };
   });
 }
 
+function checkForkedProviderEnvironment() {
+  if (
+    process.env.FORK &&
+    (!process.env.ALCHEMY_TOKEN || process.env.ALCHEMY_TOKEN === "fake_alchemy_token")
+  ) {
+    console.log(
+      chalk.red(
+        "You are running forked provider tests with invalid Alchemy credentials.\n" +
+          "Update your ALCHEMY_TOKEN settings in the `.env` file.",
+      ),
+    );
+    process.exit(1);
+  }
+}
+
+task("index:compile:one", "Compiles a single contract in isolation")
+  .addPositionalParam("contractName")
+  .setAction(async function (args, env) {
+    const sourceName = env.artifacts.readArtifactSync(args.contractName).sourceName;
+
+    const dependencyGraph: DependencyGraph = await env.run(
+      TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH,
+      { sourceNames: [sourceName] },
+    );
+
+    const resolvedFiles = dependencyGraph.getResolvedFiles().filter(resolvedFile => {
+      return resolvedFile.sourceName === sourceName;
+    });
+
+    const compilationJob: CompilationJob = await env.run(
+      TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE,
+      {
+        dependencyGraph,
+        file: resolvedFiles[0],
+      },
+    );
+
+    await env.run(TASK_COMPILE_SOLIDITY_COMPILE_JOB, {
+      compilationJob,
+      compilationJobs: [compilationJob],
+      compilationJobIndex: 0,
+      emitsArtifacts: true,
+      quiet: true,
+    });
+
+    await env.run("typechain");
+  });
+
+task("index:compile:all", "Compiles all contracts in isolation").setAction(async function (
+  _args,
+  env,
+) {
+  const allArtifacts = await env.artifacts.getAllFullyQualifiedNames();
+  for (const contractName of allArtifacts) {
+    const sourceName = env.artifacts.readArtifactSync(contractName).sourceName;
+
+    const dependencyGraph: DependencyGraph = await env.run(
+      TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH,
+      {
+        sourceNames: [sourceName],
+      },
+    );
+
+    const resolvedFiles = dependencyGraph.getResolvedFiles().filter(resolvedFile => {
+      return resolvedFile.sourceName === sourceName;
+    });
+
+    const compilationJob: CompilationJob = await env.run(
+      TASK_COMPILE_SOLIDITY_GET_COMPILATION_JOB_FOR_FILE,
+      {
+        dependencyGraph,
+        file: resolvedFiles[0],
+      },
+    );
+
+    await env.run(TASK_COMPILE_SOLIDITY_COMPILE_JOB, {
+      compilationJob,
+      compilationJobs: [compilationJob],
+      compilationJobIndex: 0,
+      emitsArtifacts: true,
+      quiet: true,
+    });
+  }
+});
 export default config;
