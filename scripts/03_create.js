@@ -49,8 +49,8 @@ async function main() {
   // name
   // symbol
   let tx = await setTokenCreatorSC.create(
-    [usdc, weth],
-    ['1000000', '1000000000000000000'],
+    [usdc],
+    ['1000000'],
     [basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule],
     deployer,
     "Strategy ETH 1",
@@ -121,6 +121,15 @@ async function main() {
   )
   console.log('customOracleNavIssuanceModuleSC.initialize' + tx.hash);
   await tx.wait();
+
+  let public = await customOracleNavIssuanceModuleSC.isPublic(TS1);
+  console.log('public: ' + public);
+  if (!public) {
+    tx = await customOracleNavIssuanceModuleSC.togglePublicAccess(TS1);
+    await tx.wait()
+    console.log(tx.hash);
+  }
+
 
   // Trade Module
   // init

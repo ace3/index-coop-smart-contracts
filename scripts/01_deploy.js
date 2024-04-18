@@ -88,6 +88,7 @@ async function main() {
 // npx hardhat run --network fork scripts/01_deploy.js
 // npx hardhat run --network fork scripts/02_init.js
 // npx hardhat run --network fork scripts/03_create.js
+// npx hardhat run --network fork scripts/04_test.js
 
 main().catch((error) => {
   console.error(error);

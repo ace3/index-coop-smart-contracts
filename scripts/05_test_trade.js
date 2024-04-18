@@ -25,14 +25,9 @@ async function getSC(scName, scAddr, signer) {
 }
 
 async function main() {
-  // impersonate account that have 40k usdc & enough eth
-  const userAddress = '0x52A258ED593C793251a89bfd36caE158EE9fC4F8'; // whale
-  await network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [userAddress],
-  });
 
-  signer = await ethers.getSigner(userAddress);
+  const accounts = await ethers.getSigners();
+  const signer = accounts[0];
 
   const { weth, usdc, wsteth, usdc_usdc_oracle, weth_usdc_oracle, wsteth_usdc_oracle, router, deployer } = data;
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
@@ -41,11 +36,17 @@ async function main() {
   const { TS1 } = data;
 
   const usdcSC = await getSC('ERC20', usdc, signer);
+  const ts1SC = await getSC('SetToken', TS1, signer);
+
+  const numUsdc = await ts1SC.getDefaultPositionRealUnit(usdc);
+  const numWeth = await ts1SC.getDefaultPositionRealUnit(weth);
+  console.log('num: ');
+  console.log({ numUsdc: numUsdc.toString(), numWeth: numWeth.toString() });
 
   // arbitrum data
   // load address..
-
   // load contracts..
+
   const controllerSC = await getSC('Controller', controller, signer);
   const integrationRegistrySC = await getSC('IntegrationRegistry', integrationRegistry, signer);
   const setTokenCreatorSC = await getSC('SetTokenCreator', setTokenCreator, signer);
@@ -57,54 +58,39 @@ async function main() {
   const customOracleNavIssuanceModuleSC = await getSC('CustomOracleNavIssuanceModule', customOracleNavIssuanceModule, signer);
   const uniswapV3ExchangeAdapterV3SC = await getSC('UniswapV3ExchangeAdapterV3', uniswapV3ExchangeAdapterV3, signer);
 
-  const userUsdc = await usdcSC.balanceOf(await signer.getAddress());
-  console.log('user usdc: ' + userUsdc.toString());
-  let result;
+  // trade test - must be done by manager
+  console.log('generateDataParam..');
+  let paths = [usdc, weth];
+  let fees = ['100'];
+  console.log({ paths, fees });
+  let calldata = await uniswapV3ExchangeAdapterV3SC.generateDataParam(paths, fees, true);
 
-  // basicIssuanceModuleSC.test
-  result = await basicIssuanceModuleSC.getRequiredComponentUnitsForIssue(TS1, '100' + zero18);
-  console.log(result);
-  console.log(result[1][0].toString());
-
-  tx = await usdcSC.approve(basicIssuanceModule, MAX_UINT);
-  console.log(tx.hash);
-  await tx.wait();
-
-  tx = await basicIssuanceModuleSC.issue(TS1, '100' + zero18, userAddress);
-  console.log(tx.hash);
-  await tx.wait();
-
-  // customOracleNavIssuanceModuleSC.test
-  result = await customOracleNavIssuanceModuleSC.getExpectedSetTokenIssueQuantity(
+  console.log(calldata);
+  /**
+     * Executes a trade on a supported DEX. Only callable by the SetToken's manager.
+     * @dev Although the SetToken units are passed in for the send and receive quantities, the total quantity
+     * sent and received is the quantity of SetToken units multiplied by the SetToken totalSupply.
+     *
+     * @param _setToken             Instance of the SetToken to trade
+     * @param _exchangeName         Human readable name of the exchange in the integrations registry
+     * @param _sendToken            Address of the token to be sent to the exchange
+     * @param _sendQuantity         Units of token in SetToken sent to the exchange
+     * @param _receiveToken         Address of the token that will be received from the exchange
+     * @param _minReceiveQuantity   Min units of token in SetToken to be received from the exchange
+     * @param _data                 Arbitrary bytes to be used to construct trade call data
+     */
+  tx = await tradeModuleSC.trade(
     TS1,
+    'UniswapV3ExchangeAdapterV3',
     usdc,
-    '1' + zero6
+    '9707',
+    weth,
+    '1',
+    calldata
   );
-  let minAmount = result.toString();
-
-  console.log(result);
-  console.log(result.toString());
-
-  result = await customOracleNavIssuanceModuleSC.isPublic(TS1);
-  console.log('public: ' + result);
-
-  tx = await usdcSC.approve(customOracleNavIssuanceModule, MAX_UINT);
-  console.log(tx.hash);
-  await tx.wait();
-
-  tx = await customOracleNavIssuanceModuleSC.issue(
-    TS1,
-    usdc,
-    '1' + zero6,
-    minAmount,
-    userAddress
-  );
-  console.log(tx.hash);
-  await tx.wait();
-
 }
 
-// npx hardhat run --network fork scripts/04_test.js
+// npx hardhat run --network fork scripts/05_test_trade.js
 
 main().catch((error) => {
   console.error(error);
