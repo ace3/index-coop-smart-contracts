@@ -46,20 +46,20 @@ async function main() {
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
   const { basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule } = data;
   const { uniswapV3ExchangeAdapterV3 } = data;
-  const { TS1 } = data;
+  const { settoken } = data;
 
   const usdcSC = await getSC('ERC20', usdc, signer);
   const wstethSC = await getSC('ERC20', wsteth, signer);
-  const ts1SC = await getSC('SetToken', TS1, signer);
+  const ts1SC = await getSC('SetToken', settoken, signer);
 
   const numUsdc = await ts1SC.getDefaultPositionRealUnit(usdc);
   const numWsteth = await ts1SC.getDefaultPositionRealUnit(wsteth);
   const numUsdc2 = await ts1SC.getTotalComponentRealUnits(usdc);
   const numWsteth2 = await ts1SC.getTotalComponentRealUnits(wsteth);
-  const usdcTs1 = await usdcSC.balanceOf(TS1);
-  const wstethTs1 = await wstethSC.balanceOf(TS1);
+  const usdcTs1 = await usdcSC.balanceOf(settoken);
+  const wstethTs1 = await wstethSC.balanceOf(settoken);
 
-  const toSwap = numUsdc; // .div(2);
+  const toSwap = numUsdc.div(2);
   console.log('num: ');
   console.log({ 
     numUsdc: wei2usdc(numUsdc), 
@@ -107,7 +107,7 @@ async function main() {
      * @param _data                 Arbitrary bytes to be used to construct trade call data
      */
   tx = await tradeModuleSC.trade(
-    TS1,
+    settoken,
     'UniswapV3ExchangeAdapterV3',
     paths[0],
     toSwap.toString(),

@@ -71,9 +71,9 @@ async function main() {
   console.log(result);
   console.log(result[1][0].toString());
 
-  // tx = await usdcSC.approve(basicIssuanceModule, MAX_UINT);
-  // console.log(tx.hash);
-  // await tx.wait();
+  tx = await usdcSC.approve(basicIssuanceModule, MAX_UINT);
+  console.log(tx.hash);
+  await tx.wait();
 
   // pay 100 usdc to issue 100 settoken
   tx = await basicIssuanceModuleSC.issue(settoken, '100' + zero18, userAddress);
