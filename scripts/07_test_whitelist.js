@@ -41,38 +41,14 @@ async function main() {
 
   const accounts = await ethers.getSigners();
   const signer = accounts[0];
+  const signer2 = accounts[1];
+  const otherAddress = signer2.address;
 
   const { weth, usdc, wsteth, usdc_usdc_oracle, weth_usdc_oracle, wsteth_usdc_oracle, router, deployer } = data;
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
   const { basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule } = data;
   const { uniswapV3ExchangeAdapterV3 } = data;
   const { settoken } = data;
-
-  const usdcSC = await getSC('ERC20', usdc, signer);
-  const wstethSC = await getSC('ERC20', wsteth, signer);
-  const ts1SC = await getSC('SetToken', settoken, signer);
-
-  const numUsdc = await ts1SC.getDefaultPositionRealUnit(usdc);
-  const numWsteth = await ts1SC.getDefaultPositionRealUnit(wsteth);
-  const numUsdc2 = await ts1SC.getTotalComponentRealUnits(usdc);
-  const numWsteth2 = await ts1SC.getTotalComponentRealUnits(wsteth);
-  const usdcTs1 = await usdcSC.balanceOf(settoken);
-  const wstethTs1 = await wstethSC.balanceOf(settoken);
-
-  const toSwap = numUsdc.div(2);
-  console.log('num: ');
-  console.log({
-    numUsdc: wei2usdc(numUsdc),
-    numWsteth: wei2eth(numWsteth),
-    numUsdc2: wei2usdc(numUsdc2),
-    numWsteth2: wei2eth(numWsteth2),
-    usdcTs1: wei2usdc(usdcTs1),
-    wstethTs1: wei2eth(wstethTs1)
-  });
-
-  // arbitrum data
-  // load address..
-  // load contracts..
 
   const controllerSC = await getSC('Controller', controller, signer);
   const integrationRegistrySC = await getSC('IntegrationRegistry', integrationRegistry, signer);
@@ -85,28 +61,25 @@ async function main() {
   const customOracleNavIssuanceModuleSC = await getSC('CustomOracleNavIssuanceModule', customOracleNavIssuanceModule, signer);
   const uniswapV3ExchangeAdapterV3SC = await getSC('UniswapV3ExchangeAdapterV3', uniswapV3ExchangeAdapterV3, signer);
 
-  // trade test - must be done by manager
-  console.log('generateDataParam..');
+
+  const ts1SC = await getSC('SetToken', settoken, signer);
+  const numUsdc = await ts1SC.getDefaultPositionRealUnit(usdc);
+  const toSwap = numUsdc.div(2);
+
+  const check = await tradeModuleSC.isWhitelisted(settoken, otherAddress);
+  if (!check) {
+    tx = await tradeModuleSC.addToWhitelist(settoken, [otherAddress]);
+    console.log(tx.hash);
+    await tx.wait();
+  }
+
+  const tradeModuleSC2 = await getSC('TradeModuleV2', tradeModule, signer2);
+  const uniswapV3ExchangeAdapterV3SC2 = await getSC('UniswapV3ExchangeAdapterV3', uniswapV3ExchangeAdapterV3, signer2);
   let paths = [usdc, wsteth];
   let fees = ['100'];
-  console.log({ paths, fees });
-  let calldata = await uniswapV3ExchangeAdapterV3SC.generateDataParam(paths, fees, true);
-
-  console.log(calldata);
-  /**
-     * Executes a trade on a supported DEX. Only callable by the SetToken's manager.
-     * @dev Although the SetToken units are passed in for the send and receive quantities, the total quantity
-     * sent and received is the quantity of SetToken units multiplied by the SetToken totalSupply.
-     *
-     * @param _setToken             Instance of the SetToken to trade
-     * @param _exchangeName         Human readable name of the exchange in the integrations registry
-     * @param _sendToken            Address of the token to be sent to the exchange
-     * @param _sendQuantity         Units of token in SetToken sent to the exchange
-     * @param _receiveToken         Address of the token that will be received from the exchange
-     * @param _minReceiveQuantity   Min units of token in SetToken to be received from the exchange
-     * @param _data                 Arbitrary bytes to be used to construct trade call data
-     */
-  tx = await tradeModuleSC.trade(
+  let calldata = await uniswapV3ExchangeAdapterV3SC2.generateDataParam(paths, fees, true);
+  console.log('trade..');
+  tx = await tradeModuleSC2.trade(
     settoken,
     'UniswapV3ExchangeAdapterV3',
     paths[0],
@@ -117,9 +90,11 @@ async function main() {
   );
   console.log(tx.hash);
   await tx.wait();
+  console.log('done!');
+
 }
 
-// npx hardhat run --network tenderlyfork scripts/06_test_trade.js
+// npx hardhat run --network tenderlyfork scripts/07_test_whitelist.js
 
 main().catch((error) => {
   console.error(error);
