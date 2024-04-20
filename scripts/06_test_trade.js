@@ -49,27 +49,27 @@ async function main() {
   const { TS1 } = data;
 
   const usdcSC = await getSC('ERC20', usdc, signer);
-  const wethSC = await getSC('ERC20', weth, signer);
+  const wstethSC = await getSC('ERC20', wsteth, signer);
   const ts1SC = await getSC('SetToken', TS1, signer);
 
   const numUsdc = await ts1SC.getDefaultPositionRealUnit(usdc);
-  const numWeth = await ts1SC.getDefaultPositionRealUnit(weth);
+  const numWsteth = await ts1SC.getDefaultPositionRealUnit(wsteth);
   const numUsdc2 = await ts1SC.getTotalComponentRealUnits(usdc);
-  const numWeth2 = await ts1SC.getTotalComponentRealUnits(weth);
+  const numWsteth2 = await ts1SC.getTotalComponentRealUnits(wsteth);
   const usdcTs1 = await usdcSC.balanceOf(TS1);
-  const wethTs1 = await wethSC.balanceOf(TS1);
+  const wstethTs1 = await wstethSC.balanceOf(TS1);
 
   const toSwap = numUsdc; // .div(2);
   console.log('num: ');
   console.log({ 
     numUsdc: wei2usdc(numUsdc), 
-    numWeth: wei2eth(numWeth),
+    numWsteth: wei2eth(numWsteth),
     numUsdc2: wei2usdc(numUsdc2), 
-    numWeth2: wei2eth(numWeth2),
+    numWsteth2: wei2eth(numWsteth2),
     usdcTs1: wei2usdc(usdcTs1),
-    wethTs1: wei2eth(wethTs1)
+    wstethTs1: wei2eth(wstethTs1)
   });
-  return;
+
   // arbitrum data
   // load address..
   // load contracts..
@@ -87,7 +87,7 @@ async function main() {
 
   // trade test - must be done by manager
   console.log('generateDataParam..');
-  let paths = [usdc, weth];
+  let paths = [usdc, wsteth];
   let fees = ['100'];
   console.log({ paths, fees });
   let calldata = await uniswapV3ExchangeAdapterV3SC.generateDataParam(paths, fees, true);
@@ -109,9 +109,9 @@ async function main() {
   tx = await tradeModuleSC.trade(
     TS1,
     'UniswapV3ExchangeAdapterV3',
-    usdc,
+    paths[0],
     toSwap.toString(),
-    weth,
+    paths[1],
     '1',
     calldata
   );

@@ -53,7 +53,7 @@ async function main() {
     ['1000000'],
     [basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule],
     deployer,
-    "Strategy ETH 1",
+    "Token Strategy 1",
     "TS1"
   );
 
@@ -61,12 +61,12 @@ async function main() {
   await tx.wait();
 
   const tokenSets = await controllerSC.getSets();
-  const TS1 = tokenSets[tokenSets.length - 1];
-  await save('TS1', TS1);
+  const settoken = tokenSets[tokenSets.length - 1];
+  await save('settoken', settoken);
 
   // BasicIssuanceModule
   // init
-  tx = await basicIssuanceModuleSC.initialize(TS1, zeroAddress);
+  tx = await basicIssuanceModuleSC.initialize(settoken, zeroAddress);
   console.log('basicIssuanceModuleSC.initialize' + tx.hash);
   await tx.wait();
 
@@ -83,7 +83,7 @@ async function main() {
     '25000000000000000', 
     '25000000000000000', 
     '0'];
-  tx = await streamingFeeModuleSC.initialize(TS1, feeState);
+  tx = await streamingFeeModuleSC.initialize(settoken, feeState);
   console.log('streamingFeeModuleSC.initialize' + tx.hash);
   await tx.wait();
 
@@ -116,16 +116,16 @@ async function main() {
     "10000000000000000000"
   ];
   tx = await customOracleNavIssuanceModuleSC.initialize(
-    TS1,
+    settoken,
     navISettings
   )
   console.log('customOracleNavIssuanceModuleSC.initialize' + tx.hash);
   await tx.wait();
 
-  let public = await customOracleNavIssuanceModuleSC.isPublic(TS1);
+  let public = await customOracleNavIssuanceModuleSC.isPublic(settoken);
   console.log('public: ' + public);
   if (!public) {
-    tx = await customOracleNavIssuanceModuleSC.togglePublicAccess(TS1);
+    tx = await customOracleNavIssuanceModuleSC.togglePublicAccess(settoken);
     await tx.wait()
     console.log(tx.hash);
   }
@@ -133,26 +133,11 @@ async function main() {
 
   // Trade Module
   // init
-  tx = await tradeModuleSC.initialize(TS1);
+  tx = await tradeModuleSC.initialize(settoken);
   console.log('tradeModuleSC.initialize' + tx.hash);
   await tx.wait();
 
-  // BasicIssuanceModule
-  // issue
-
-  // NAV Issuance Module
-  // getExpectedSetTokenIssueQuantity
-  // approve and issue
-
-
-  // Trade module trade preparation:
-  // adapter.generateDataParam
-  // trade module.trade
-
 }
-
-// npx hardhat compile
-// npx hardhat run --network fork scripts/deploy.js
 
 main().catch((error) => {
   console.error(error);

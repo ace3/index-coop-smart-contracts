@@ -88,7 +88,9 @@ async function main() {
 // npx hardhat run --network tenderlyfork scripts/01_deploy.js
 // npx hardhat run --network tenderlyfork scripts/02_init.js
 // npx hardhat run --network tenderlyfork scripts/03_create.js
-// npx hardhat run --network tenderlyfork scripts/04_test.js
+// npx hardhat run --network tenderlyfork scripts/04_test_basicissue.js
+// npx hardhat run --network tenderlyfork scripts/05_test_navissue.js
+// npx hardhat run --network tenderlyfork scripts/06_test_trade.js
 
 main().catch((error) => {
   console.error(error);

@@ -43,7 +43,7 @@ async function main() {
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
   const { basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule } = data;
   const { uniswapV3ExchangeAdapterV3 } = data;
-  const { TS1 } = data;
+  const { settoken } = data;
 
   const usdcSC = await getSC('ERC20', usdc, signer);
 
@@ -67,7 +67,7 @@ async function main() {
   let result;
 
   // basicIssuanceModuleSC.test
-  result = await basicIssuanceModuleSC.getRequiredComponentUnitsForIssue(TS1, '100' + zero18);
+  result = await basicIssuanceModuleSC.getRequiredComponentUnitsForIssue(settoken, '100' + zero18);
   console.log(result);
   console.log(result[1][0].toString());
 
@@ -75,8 +75,8 @@ async function main() {
   // console.log(tx.hash);
   // await tx.wait();
 
-  // pay 100 usdc to issue 100 ts1
-  tx = await basicIssuanceModuleSC.issue(TS1, '100' + zero18, userAddress);
+  // pay 100 usdc to issue 100 settoken
+  tx = await basicIssuanceModuleSC.issue(settoken, '100' + zero18, userAddress);
   console.log(tx.hash);
   await tx.wait();
 

@@ -44,7 +44,7 @@ async function main() {
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
   const { basicIssuanceModule, tradeModule, streamingFeeModule, customOracleNavIssuanceModule } = data;
   const { uniswapV3ExchangeAdapterV3 } = data;
-  const { TS1 } = data;
+  const { settoken } = data;
 
   const usdcSC = await getSC('ERC20', usdc, signer);
 
@@ -68,9 +68,9 @@ async function main() {
   let result;
 
   // customOracleNavIssuanceModuleSC.test
-  // get ~97 TS1 for 100 usdc
+  // get ~97 settoken for 100 usdc
   result = await customOracleNavIssuanceModuleSC.getExpectedSetTokenIssueQuantity(
-    TS1,
+    settoken,
     usdc,
     '100' + zero6
   );
@@ -81,7 +81,7 @@ async function main() {
   const expectedSetTokenQuantity = ethers.utils.formatUnits(result, "ether");
   console.log('expectedSetTokenQuantity: ' + expectedSetTokenQuantity);
 
-  result = await customOracleNavIssuanceModuleSC.isPublic(TS1);
+  result = await customOracleNavIssuanceModuleSC.isPublic(settoken);
   console.log('public: ' + result);
 
   tx = await usdcSC.approve(customOracleNavIssuanceModule, MAX_UINT);
@@ -89,7 +89,7 @@ async function main() {
   await tx.wait();
 
   tx = await customOracleNavIssuanceModuleSC.issue(
-    TS1,
+    settoken,
     usdc,
     '100' + zero6,
     minAmount,
