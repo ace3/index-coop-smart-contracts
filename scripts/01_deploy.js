@@ -62,7 +62,7 @@ async function main() {
   await save('basicIssuanceModule', basicIssuanceModule.address);
 
   // Trade Module constructor(controller)
-  SC = await ethers.getContractFactory("TradeModule");
+  SC = await ethers.getContractFactory("TradeModuleV2");
   const tradeModule = await SC.deploy(controller.address);
   await save('tradeModule', tradeModule.address);
 
@@ -85,10 +85,10 @@ async function main() {
 }
 
 // npx hardhat compile
-// npx hardhat run --network fork scripts/01_deploy.js
-// npx hardhat run --network fork scripts/02_init.js
-// npx hardhat run --network fork scripts/03_create.js
-// npx hardhat run --network fork scripts/04_test.js
+// npx hardhat run --network tenderlyfork scripts/01_deploy.js
+// npx hardhat run --network tenderlyfork scripts/02_init.js
+// npx hardhat run --network tenderlyfork scripts/03_create.js
+// npx hardhat run --network tenderlyfork scripts/04_test.js
 
 main().catch((error) => {
   console.error(error);

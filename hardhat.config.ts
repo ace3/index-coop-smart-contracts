@@ -86,6 +86,13 @@ const config: HardhatUserConfig = {
       blockGasLimit: 12000000,
       accounts: [FORK_PRIVATE_KEY],
     },
+    tenderlyfork: {
+      url: process.env.TENDERLYFORK_RPC,
+      timeout: 200000,
+      gas: 12000000,
+      blockGasLimit: 12000000,
+      accounts: [FORK_PRIVATE_KEY, process.env.FORK_PRIVATE_KEY2]
+    },
     // To update coverage network configuration got o .solcover.js and update param in providerOptions field
     coverage: {
       url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
@@ -130,7 +137,7 @@ function checkForkedProviderEnvironment() {
     console.log(
       chalk.red(
         "You are running forked provider tests with invalid Alchemy credentials.\n" +
-          "Update your ALCHEMY_TOKEN settings in the `.env` file.",
+        "Update your ALCHEMY_TOKEN settings in the `.env` file.",
       ),
     );
     process.exit(1);

@@ -26,13 +26,19 @@ async function getSC(scName, scAddr, signer) {
 
 async function main() {
   // impersonate account that have 40k usdc & enough eth
-  const userAddress = '0x52A258ED593C793251a89bfd36caE158EE9fC4F8'; // whale
-  await network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [userAddress],
-  });
+  // const userAddress = '0x52A258ED593C793251a89bfd36caE158EE9fC4F8'; // whale
+  // await network.provider.request({
+  //   method: "hardhat_impersonateAccount",
+  //   params: [userAddress],
+  // });
 
-  signer = await ethers.getSigner(userAddress);
+  // signer = await ethers.getSigner(userAddress);
+
+  // use tenderly to have much eth & usdc
+  const accounts = await ethers.getSigners();
+  const signer = accounts[1]; // to test, dont use manager account
+  const userAddress = signer.address;
+  console.log(userAddress);
 
   const { weth, usdc, wsteth, usdc_usdc_oracle, weth_usdc_oracle, wsteth_usdc_oracle, router, deployer } = data;
   const { controller, integrationRegistry, setTokenCreator, setValuer, priceOracle } = data;
@@ -52,7 +58,7 @@ async function main() {
   const setValuerSC = await getSC('SetValuer', setValuer, signer);
   const priceOracleSC = await getSC('PriceOracle', priceOracle, signer);
   const basicIssuanceModuleSC = await getSC('BasicIssuanceModule', basicIssuanceModule, signer);
-  const tradeModuleSC = await getSC('TradeModule', tradeModule, signer);
+  const tradeModuleSC = await getSC('TradeModuleV2', tradeModule, signer);
   const streamingFeeModuleSC = await getSC('StreamingFeeModule', streamingFeeModule, signer);
   const customOracleNavIssuanceModuleSC = await getSC('CustomOracleNavIssuanceModule', customOracleNavIssuanceModule, signer);
   const uniswapV3ExchangeAdapterV3SC = await getSC('UniswapV3ExchangeAdapterV3', uniswapV3ExchangeAdapterV3, signer);
@@ -61,29 +67,19 @@ async function main() {
   console.log('user usdc: ' + userUsdc.toString());
   let result;
 
-  // basicIssuanceModuleSC.test
-  result = await basicIssuanceModuleSC.getRequiredComponentUnitsForIssue(TS1, '100' + zero18);
-  console.log(result);
-  console.log(result[1][0].toString());
-
-  tx = await usdcSC.approve(basicIssuanceModule, MAX_UINT);
-  console.log(tx.hash);
-  await tx.wait();
-
-  tx = await basicIssuanceModuleSC.issue(TS1, '100' + zero18, userAddress);
-  console.log(tx.hash);
-  await tx.wait();
-
   // customOracleNavIssuanceModuleSC.test
+  // get ~97 TS1 for 100 usdc
   result = await customOracleNavIssuanceModuleSC.getExpectedSetTokenIssueQuantity(
     TS1,
     usdc,
-    '1' + zero6
+    '100' + zero6
   );
-  let minAmount = result.toString();
 
+  let minAmount = result.toString();
   console.log(result);
   console.log(result.toString());
+  const expectedSetTokenQuantity = ethers.utils.formatUnits(result, "ether");
+  console.log('expectedSetTokenQuantity: ' + expectedSetTokenQuantity);
 
   result = await customOracleNavIssuanceModuleSC.isPublic(TS1);
   console.log('public: ' + result);
@@ -95,7 +91,7 @@ async function main() {
   tx = await customOracleNavIssuanceModuleSC.issue(
     TS1,
     usdc,
-    '1' + zero6,
+    '100' + zero6,
     minAmount,
     userAddress
   );
@@ -104,7 +100,7 @@ async function main() {
 
 }
 
-// npx hardhat run --network fork scripts/04_test.js
+// npx hardhat run --network tenderlyfork scripts/05_test_navissue.js
 
 main().catch((error) => {
   console.error(error);

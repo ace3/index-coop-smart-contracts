@@ -35,7 +35,7 @@ async function main() {
   const setValuerSC = await getSC('SetValuer', setValuer);
   const priceOracleSC = await getSC('PriceOracle', priceOracle);
   const basicIssuanceModuleSC = await getSC('BasicIssuanceModule', basicIssuanceModule);
-  const tradeModuleSC = await getSC('TradeModule', tradeModule);
+  const tradeModuleSC = await getSC('TradeModuleV2', tradeModule);
   const streamingFeeModuleSC = await getSC('StreamingFeeModule', streamingFeeModule);
   const customOracleNavIssuanceModuleSC = await getSC('CustomOracleNavIssuanceModule', customOracleNavIssuanceModule);
   const uniswapV3ExchangeAdapterV3SC = await getSC('UniswapV3ExchangeAdapterV3', uniswapV3ExchangeAdapterV3);
